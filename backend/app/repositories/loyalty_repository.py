@@ -3,15 +3,43 @@ from app.repositories.base import row_to_dict, rows_to_dicts
 
 
 class LoyaltyRepository:
-    def list_members(self) -> list[dict]:
+    def _build_member_filter(self, tier_id: int | None, points_min: int | None,
+                             points_max: int | None, birthday_month: int | None,
+                             phone: str | None) -> tuple[str, tuple]:
+        conditions = []
+        params: list = []
+        if tier_id is not None:
+            conditions.append("m.tier_id = ?")
+            params.append(tier_id)
+        if points_min is not None:
+            conditions.append("m.points >= ?")
+            params.append(points_min)
+        if points_max is not None:
+            conditions.append("m.points <= ?")
+            params.append(points_max)
+        if birthday_month is not None:
+            conditions.append("CAST(strftime('%m', m.birthday) AS INTEGER) = ?")
+            params.append(birthday_month)
+        if phone:
+            conditions.append("m.phone LIKE ?")
+            params.append(f"%{phone}%")
+        where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+        return where, tuple(params)
+
+    def list_members(self, tier_id: int | None = None, points_min: int | None = None,
+                     points_max: int | None = None, birthday_month: int | None = None,
+                     phone: str | None = None) -> list[dict]:
+        where, params = self._build_member_filter(tier_id, points_min, points_max, birthday_month, phone)
         with get_connection() as conn:
             rows = conn.execute(
-                """
+                f"""
                 SELECT m.*, t.name AS tier_name, t.discount_percent, t.birthday_bonus, t.benefits
                 FROM members m
                 JOIN tiers t ON t.id = m.tier_id
+                {where}
                 ORDER BY m.id DESC
-                """
+                """,
+                params,
             ).fetchall()
             return rows_to_dicts(rows)
 

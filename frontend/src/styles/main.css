@@ -211,6 +211,53 @@ select {
   background: #a94f2c;
 }
 
+.ghost-button {
+  background: transparent;
+  border: 1px solid #d9cbbb;
+  border-radius: 8px;
+  color: #4d463f;
+  font-weight: 700;
+  min-height: 42px;
+  padding: 10px 16px;
+}
+
+.ghost-button:hover {
+  background: #f5f1ea;
+}
+
+.filter-form {
+  align-items: end;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-actions button {
+  flex: 1;
+}
+
+.count-badge {
+  background: #eef3e7;
+  border-radius: 12px;
+  color: #365a39;
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: 8px;
+  padding: 3px 10px;
+}
+
+.empty-row {
+  color: #74695f;
+  font-size: 14px;
+  padding: 28px;
+  text-align: center;
+}
+
 .list-table,
 .data-table {
   display: grid;

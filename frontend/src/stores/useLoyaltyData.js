@@ -1,6 +1,14 @@
 import { reactive } from 'vue'
 import { loyaltyApi } from '../api/loyalty'
 
+const filter = reactive({
+  tier_id: '',
+  points_min: '',
+  points_max: '',
+  birthday_month: '',
+  phone: ''
+})
+
 const state = reactive({
   loading: false,
   error: '',
@@ -11,7 +19,8 @@ const state = reactive({
   gifts: [],
   tiers: [],
   vouchers: [],
-  transactions: []
+  transactions: [],
+  filter
 })
 
 async function run(action, successMessage = '') {
@@ -29,13 +38,29 @@ async function run(action, successMessage = '') {
   }
 }
 
+async function refreshMembersWithFilter() {
+  state.loading = true
+  state.error = ''
+  try {
+    const [dashboard, members] = await Promise.all([
+      loyaltyApi.dashboard(filter),
+      loyaltyApi.members(filter)
+    ])
+    Object.assign(state, { dashboard, members })
+  } catch (error) {
+    state.error = error.message
+  } finally {
+    state.loading = false
+  }
+}
+
 async function refreshAll() {
   state.loading = true
   state.error = ''
   try {
     const [dashboard, members, rules, gifts, tiers, vouchers, transactions] = await Promise.all([
-      loyaltyApi.dashboard(),
-      loyaltyApi.members(),
+      loyaltyApi.dashboard(filter),
+      loyaltyApi.members(filter),
       loyaltyApi.rules(),
       loyaltyApi.gifts(),
       loyaltyApi.tiers(),
@@ -50,10 +75,23 @@ async function refreshAll() {
   }
 }
 
+function resetFilter() {
+  Object.assign(filter, {
+    tier_id: '',
+    points_min: '',
+    points_max: '',
+    birthday_month: '',
+    phone: ''
+  })
+}
+
 export function useLoyaltyData() {
   return {
     state,
+    filter,
     refreshAll,
+    refreshMembersWithFilter,
+    resetFilter,
     async createMember(payload) {
       await run(() => loyaltyApi.createMember(payload), '会员已创建')
       await refreshAll()

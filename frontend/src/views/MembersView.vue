@@ -1,16 +1,41 @@
 <script setup>
 import { onMounted, reactive } from 'vue'
 import StatusBanner from '../components/StatusBanner.vue'
+import MetricCard from '../components/MetricCard.vue'
 import { useLoyaltyData } from '../stores/useLoyaltyData'
 
-const { state, refreshAll, createMember } = useLoyaltyData()
+const { state, filter, refreshAll, refreshMembersWithFilter, resetFilter, createMember } = useLoyaltyData()
 const form = reactive({ name: '', phone: '', birthday: '2000-01-01' })
+
+const months = [
+  { value: 1, label: '1月' },
+  { value: 2, label: '2月' },
+  { value: 3, label: '3月' },
+  { value: 4, label: '4月' },
+  { value: 5, label: '5月' },
+  { value: 6, label: '6月' },
+  { value: 7, label: '7月' },
+  { value: 8, label: '8月' },
+  { value: 9, label: '9月' },
+  { value: 10, label: '10月' },
+  { value: 11, label: '11月' },
+  { value: 12, label: '12月' }
+]
 
 onMounted(refreshAll)
 
 async function submitMember() {
   await createMember({ ...form })
   Object.assign(form, { name: '', phone: '', birthday: '2000-01-01' })
+}
+
+async function applyFilter() {
+  await refreshMembersWithFilter()
+}
+
+async function clearFilter() {
+  resetFilter()
+  await refreshMembersWithFilter()
 }
 </script>
 
@@ -23,6 +48,51 @@ async function submitMember() {
       </div>
       <StatusBanner :error="state.error" :notice="state.notice" :loading="state.loading" />
     </div>
+
+    <div class="metrics-grid">
+      <MetricCard label="会员数" :value="state.dashboard?.members_count || 0" hint="筛选结果" />
+      <MetricCard label="积分池" :value="state.dashboard?.total_points || 0" hint="筛选结果" />
+      <MetricCard label="礼品" :value="state.dashboard?.gifts_count || 0" hint="可兑换项目" />
+      <MetricCard label="礼券" :value="state.dashboard?.active_vouchers || 0" hint="筛选会员未使用券" />
+    </div>
+
+    <section class="panel">
+      <h3>组合筛选</h3>
+      <div class="filter-form">
+        <label>
+          等级
+          <select v-model.number="filter.tier_id">
+            <option :value="''">全部等级</option>
+            <option v-for="tier in state.tiers" :key="tier.id" :value="tier.id">
+              {{ tier.name }}
+            </option>
+          </select>
+        </label>
+        <label>
+          最低积分
+          <input v-model.number="filter.points_min" type="number" min="0" placeholder="积分下限" />
+        </label>
+        <label>
+          最高积分
+          <input v-model.number="filter.points_max" type="number" min="0" placeholder="积分上限" />
+        </label>
+        <label>
+          生日月份
+          <select v-model.number="filter.birthday_month">
+            <option :value="''">全部月份</option>
+            <option v-for="m in months" :key="m.value" :value="m.value">{{ m.label }}</option>
+          </select>
+        </label>
+        <label>
+          手机号
+          <input v-model.trim="filter.phone" type="text" placeholder="模糊匹配" />
+        </label>
+        <div class="filter-actions">
+          <button class="primary-button" type="button" @click="applyFilter">查询</button>
+          <button class="ghost-button" type="button" @click="clearFilter">重置</button>
+        </div>
+      </div>
+    </section>
 
     <div class="two-column">
       <form class="panel" @submit.prevent="submitMember">
@@ -43,7 +113,7 @@ async function submitMember() {
       </form>
 
       <section class="panel wide-panel">
-        <h3>会员列表</h3>
+        <h3>会员列表 <small class="count-badge">共 {{ state.members.length }} 条</small></h3>
         <div class="data-table">
           <div class="table-head">
             <span>会员</span>
@@ -56,6 +126,9 @@ async function submitMember() {
             <span>{{ member.tier_name }}</span>
             <span>{{ member.points }}</span>
             <span>{{ member.benefits.join('、') }}</span>
+          </div>
+          <div v-if="!state.members.length" class="empty-row">
+            <span>暂无符合条件的会员</span>
           </div>
         </div>
       </section>

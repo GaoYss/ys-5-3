@@ -29,8 +29,28 @@ class LoyaltyService:
             raise HTTPException(status_code=404, detail="会员不存在")
         return self._normalize_member(refreshed)
 
-    def list_members(self) -> list[dict]:
-        return [self._normalize_member(member) for member in self.repo.list_members()]
+    def list_members(self, tier_id: int | None = None, points_min: int | None = None,
+                     points_max: int | None = None, birthday_month: int | None = None,
+                     phone: str | None = None) -> list[dict]:
+        return [self._normalize_member(member) for member in self.repo.list_members(
+            tier_id=tier_id, points_min=points_min, points_max=points_max,
+            birthday_month=birthday_month, phone=phone)]
+
+    def filtered_dashboard(self, tier_id: int | None = None, points_min: int | None = None,
+                           points_max: int | None = None, birthday_month: int | None = None,
+                           phone: str | None = None) -> dict:
+        members = self.repo.list_members(
+            tier_id=tier_id, points_min=points_min, points_max=points_max,
+            birthday_month=birthday_month, phone=phone)
+        gifts = self.repo.list_gifts()
+        vouchers = self.repo.list_vouchers()
+        member_ids = {m["id"] for m in members}
+        return {
+            "members_count": len(members),
+            "total_points": sum(m["points"] for m in members),
+            "gifts_count": len([g for g in gifts if g["active"]]),
+            "active_vouchers": len([v for v in vouchers if v["status"] == "unused" and v["member_id"] in member_ids]),
+        }
 
     def create_member(self, name: str, phone: str, birthday: str) -> dict:
         try:
