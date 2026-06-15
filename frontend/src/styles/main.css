@@ -225,11 +225,27 @@ select {
   background: #f5f1ea;
 }
 
+.filter-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+}
+
 .filter-form {
   align-items: end;
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.filter-form label.has-error input {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 }
 
 .filter-actions {

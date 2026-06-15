@@ -1,11 +1,12 @@
 <script setup>
-import { onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import StatusBanner from '../components/StatusBanner.vue'
 import MetricCard from '../components/MetricCard.vue'
 import { useLoyaltyData } from '../stores/useLoyaltyData'
 
 const { state, filter, refreshAll, refreshMembersWithFilter, resetFilter, createMember } = useLoyaltyData()
 const form = reactive({ name: '', phone: '', birthday: '2000-01-01' })
+const filterError = ref('')
 
 const months = [
   { value: 1, label: '1月' },
@@ -22,6 +23,14 @@ const months = [
   { value: 12, label: '12月' }
 ]
 
+const hasActiveFilter = computed(() => {
+  return (filter.tier_id != null && filter.tier_id !== '' && !isNaN(filter.tier_id)) ||
+    (filter.points_min != null && filter.points_min !== '' && !isNaN(filter.points_min)) ||
+    (filter.points_max != null && filter.points_max !== '' && !isNaN(filter.points_max)) ||
+    (filter.birthday_month != null && filter.birthday_month !== '' && !isNaN(filter.birthday_month)) ||
+    (filter.phone != null && filter.phone !== '')
+})
+
 onMounted(refreshAll)
 
 async function submitMember() {
@@ -29,11 +38,26 @@ async function submitMember() {
   Object.assign(form, { name: '', phone: '', birthday: '2000-01-01' })
 }
 
+function validateFilter() {
+  const min = Number(filter.points_min)
+  const max = Number(filter.points_max)
+  const hasMin = filter.points_min != null && filter.points_min !== '' && !isNaN(filter.points_min)
+  const hasMax = filter.points_max != null && filter.points_max !== '' && !isNaN(filter.points_max)
+  if (hasMin && hasMax && min > max) {
+    filterError.value = '最低积分不能大于最高积分，请检查积分区间'
+    return false
+  }
+  filterError.value = ''
+  return true
+}
+
 async function applyFilter() {
+  if (!validateFilter()) return
   await refreshMembersWithFilter()
 }
 
 async function clearFilter() {
+  filterError.value = ''
   resetFilter()
   await refreshMembersWithFilter()
 }
@@ -58,6 +82,9 @@ async function clearFilter() {
 
     <section class="panel">
       <h3>组合筛选</h3>
+      <div v-if="filterError" class="filter-error">
+        <span>{{ filterError }}</span>
+      </div>
       <div class="filter-form">
         <label>
           等级
@@ -68,11 +95,11 @@ async function clearFilter() {
             </option>
           </select>
         </label>
-        <label>
+        <label :class="{ 'has-error': filterError }">
           最低积分
           <input v-model.number="filter.points_min" type="number" min="0" placeholder="积分下限" />
         </label>
-        <label>
+        <label :class="{ 'has-error': filterError }">
           最高积分
           <input v-model.number="filter.points_max" type="number" min="0" placeholder="积分上限" />
         </label>

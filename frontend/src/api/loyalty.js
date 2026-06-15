@@ -1,13 +1,27 @@
 import { http } from './http'
 
+function isUsableNumber(val) {
+  return val != null && val !== '' && !isNaN(val)
+}
+
 function buildFilterParams(filter) {
   if (!filter) return {}
   const params = {}
-  if (filter.tier_id != null && filter.tier_id !== '') params.tier_id = filter.tier_id
-  if (filter.points_min != null && filter.points_min !== '') params.points_min = filter.points_min
-  if (filter.points_max != null && filter.points_max !== '') params.points_max = filter.points_max
-  if (filter.birthday_month != null && filter.birthday_month !== '') params.birthday_month = filter.birthday_month
-  if (filter.phone != null && filter.phone !== '') params.phone = filter.phone
+  if (filter.tier_id != null && filter.tier_id !== '' && !isNaN(filter.tier_id)) {
+    params.tier_id = filter.tier_id
+  }
+  if (isUsableNumber(filter.points_min)) {
+    params.points_min = Number(filter.points_min)
+  }
+  if (isUsableNumber(filter.points_max)) {
+    params.points_max = Number(filter.points_max)
+  }
+  if (filter.birthday_month != null && filter.birthday_month !== '' && !isNaN(filter.birthday_month)) {
+    params.birthday_month = filter.birthday_month
+  }
+  if (filter.phone != null && filter.phone !== '') {
+    params.phone = filter.phone
+  }
   return params
 }
 
