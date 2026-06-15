@@ -1,5 +1,16 @@
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
+function buildUrlWithParams(path, params = {}) {
+  if (!params || Object.keys(params).length === 0) return path
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === '') continue
+    search.append(key, String(value))
+  }
+  const query = search.toString()
+  return query ? `${path}?${query}` : path
+}
+
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
     headers: {
@@ -18,6 +29,6 @@ async function request(path, options = {}) {
 }
 
 export const http = {
-  get: (path) => request(path),
+  get: (path, { params } = {}) => request(buildUrlWithParams(path, params)),
   post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) })
 }

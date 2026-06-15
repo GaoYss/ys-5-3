@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import StatusBanner from '../components/StatusBanner.vue'
 import MetricCard from '../components/MetricCard.vue'
 import { useLoyaltyData } from '../stores/useLoyaltyData'
@@ -7,6 +7,8 @@ import { useLoyaltyData } from '../stores/useLoyaltyData'
 const { state, filter, refreshAll, refreshMembersWithFilter, resetFilter, createMember } = useLoyaltyData()
 const form = reactive({ name: '', phone: '', birthday: '2000-01-01' })
 const filterError = ref('')
+const pointsMinRef = ref(null)
+const pointsMaxRef = ref(null)
 
 const months = [
   { value: 1, label: '1月' },
@@ -38,13 +40,18 @@ async function submitMember() {
   Object.assign(form, { name: '', phone: '', birthday: '2000-01-01' })
 }
 
-function validateFilter() {
+async function validateFilter() {
   const min = Number(filter.points_min)
   const max = Number(filter.points_max)
   const hasMin = filter.points_min != null && filter.points_min !== '' && !isNaN(filter.points_min)
   const hasMax = filter.points_max != null && filter.points_max !== '' && !isNaN(filter.points_max)
   if (hasMin && hasMax && min > max) {
     filterError.value = '最低积分不能大于最高积分，请检查积分区间'
+    await nextTick()
+    if (pointsMinRef.value) {
+      pointsMinRef.value.focus()
+      pointsMinRef.value.select()
+    }
     return false
   }
   filterError.value = ''
@@ -52,7 +59,7 @@ function validateFilter() {
 }
 
 async function applyFilter() {
-  if (!validateFilter()) return
+  if (!(await validateFilter())) return
   await refreshMembersWithFilter()
 }
 
@@ -97,11 +104,11 @@ async function clearFilter() {
         </label>
         <label :class="{ 'has-error': filterError }">
           最低积分
-          <input v-model.number="filter.points_min" type="number" min="0" placeholder="积分下限" />
+          <input ref="pointsMinRef" v-model.number="filter.points_min" type="number" min="0" placeholder="积分下限" />
         </label>
         <label :class="{ 'has-error': filterError }">
           最高积分
-          <input v-model.number="filter.points_max" type="number" min="0" placeholder="积分上限" />
+          <input ref="pointsMaxRef" v-model.number="filter.points_max" type="number" min="0" placeholder="积分上限" />
         </label>
         <label>
           生日月份
